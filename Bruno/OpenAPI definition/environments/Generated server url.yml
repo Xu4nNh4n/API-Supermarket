@@ -1,0 +1,12 @@
+name: Generated server url
+variables:
+  - name: baseUrl
+    value: http://localhost:8080
+  - name: admin
+    value: eyJhbGciOiJIUzM4NCJ9.eyJzdWIiOiJhZG1pbiIsInVzZXJJZCI6MSwicm9sZSI6IkFETUlOIiwiaWF0IjoxNzg0MDI3MzU1LCJleHAiOjE3ODQxMTM3NTV9.4FpXGTfB7F21OFc9k1xuneNHwhHkb016m8dazyGz1HwLsOwUhXF7gi3FRCEghAsI
+  - name: quanly
+    value: eyJhbGciOiJIUzM4NCJ9.eyJzdWIiOiJtYW5hZ2VyMDEiLCJ1c2VySWQiOjIsInJvbGUiOiJNQU5BR0VSIiwiaWF0IjoxNzg0MDI3NDUwLCJleHAiOjE3ODQxMTM4NTB9.-87YU1BL6muYSuMLSB-9kHg7MctXSDDHtMDwdx87BQBD4mBq9QISAmI1tCWX98mx
+  - name: thukho
+    value: eyJhbGciOiJIUzM4NCJ9.eyJzdWIiOiJ3YXJlaG91c2UwMSIsInVzZXJJZCI6NCwicm9sZSI6IldBUkVIT1VTRSIsImlhdCI6MTc4NDAyNzQ3OSwiZXhwIjoxNzg0MTEzODc5fQ._JvzdZEXU_tpZTH7NDU7Xv5QoCwP645QABdNhWrwJQbInP_AZwAjRnl_-a-ol_ls
+  - name: thungan
+    value: eyJhbGciOiJIUzM4NCJ9.eyJzdWIiOiJjYXNoaWVyMDEiLCJ1c2VySWQiOjMsInJvbGUiOiJDQVNISUVSIiwiaWF0IjoxNzg0MDI3NTA4LCJleHAiOjE3ODQxMTM5MDh9.nv7ilC06tzmxQCBsoSdjIs4YxWoVS693iYT5qtYjIvH0Gv9yDnkQBS41FKRA4ZCs
