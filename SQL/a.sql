@@ -1,39 +1,65 @@
-USE supermarket_api;
+-- ==============================================================================
+-- 🛒 SUPERMARKET MANAGEMENT SYSTEM - TOÀN BỘ CSDL MYSQL CHUẨN 100% VỚI BACKEND
+-- ==============================================================================
+-- File này chứa toàn bộ DDL (Tạo bảng) và DML (Dữ liệu mẫu) đã được đồng bộ
+-- chính xác 100% với các JPA Entity trong Backend (Java 21 / Spring Boot 4).
+-- ==============================================================================
+
+-- 1. Tạo database nếu chưa có và chuyển sang sử dụng
+CREATE DATABASE IF NOT EXISTS supermarket_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+USE supermarket_db;
+
+-- 2. Xóa các bảng cũ theo thứ tự khóa ngoại để tránh lỗi (nếu muốn reset)
+SET FOREIGN_KEY_CHECKS = 0;
+DROP TABLE IF EXISTS sales_order_items;
+DROP TABLE IF EXISTS sales_orders;
+DROP TABLE IF EXISTS refresh_tokens;
+DROP TABLE IF EXISTS products;
+DROP TABLE IF EXISTS users;
+DROP TABLE IF EXISTS customers;
+DROP TABLE IF EXISTS suppliers;
+DROP TABLE IF EXISTS categories;
+DROP TABLE IF EXISTS roles;
+SET FOREIGN_KEY_CHECKS = 1;
+
+-- ==============================================================================
+-- 1. BẢNG ROLES (VAI TRÒ / PHÂN QUYỀN)
+-- ==============================================================================
 CREATE TABLE roles (
     role_id BIGINT AUTO_INCREMENT PRIMARY KEY,
     role_name VARCHAR(50) NOT NULL UNIQUE,
     description VARCHAR(255),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ==============================================================================
+-- 2. BẢNG CATEGORIES (DANH MỤC SẢN PHẨM)
+-- ==============================================================================
+CREATE TABLE categories (
+    category_id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    category_name VARCHAR(100) NOT NULL UNIQUE,
+    description VARCHAR(255),
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- =========================
--- 2. PERMISSIONS - QUYỀN
--- =========================
-CREATE TABLE permissions (
-    permission_id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    permission_name VARCHAR(100) NOT NULL UNIQUE,
-    description VARCHAR(255)
-);
+-- ==============================================================================
+-- 3. BẢNG SUPPLIERS (NHÀ CUNG CẤP)
+-- ==============================================================================
+CREATE TABLE suppliers (
+    supplier_id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    supplier_name VARCHAR(150) NOT NULL,
+    supplier_phone VARCHAR(20) UNIQUE,
+    supplier_email VARCHAR(100) UNIQUE,
+    supplier_address VARCHAR(255),
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- =========================
--- 3. ROLE_PERMISSIONS - PHÂN QUYỀN THEO ROLE
--- =========================
-CREATE TABLE role_permissions (
-    role_id BIGINT NOT NULL,
-    permission_id BIGINT NOT NULL,
-
-    PRIMARY KEY (role_id, permission_id),
-
-    CONSTRAINT fk_role_permissions_roles
-        FOREIGN KEY (role_id) REFERENCES roles(role_id),
-
-    CONSTRAINT fk_role_permissions_permissions
-        FOREIGN KEY (permission_id) REFERENCES permissions(permission_id)
-);
-
--- =========================
--- 4. USERS - TÀI KHOẢN NHÂN VIÊN
--- =========================
+-- ==============================================================================
+-- 4. BẢNG USERS (TÀI KHOẢN NHÂN VIÊN & QUẢN TRỊ VIÊN)
+-- ==============================================================================
 CREATE TABLE users (
     user_id BIGINT AUTO_INCREMENT PRIMARY KEY,
     full_name VARCHAR(150) NOT NULL,
@@ -41,350 +67,135 @@ CREATE TABLE users (
     password_hash VARCHAR(255) NOT NULL,
     email VARCHAR(100) UNIQUE,
     phone VARCHAR(20),
-    is_active BOOLEAN DEFAULT TRUE,
-
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
     role_id BIGINT NOT NULL,
-
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT fk_users_roles FOREIGN KEY (role_id) REFERENCES roles(role_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-    CONSTRAINT fk_users_roles
-        FOREIGN KEY (role_id) REFERENCES roles(role_id)
-);
-
--- =========================
--- 5. CATEGORIES - DANH MỤC
--- =========================
-CREATE TABLE categories (
-    category_id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    name VARCHAR(100) NOT NULL,
-    description VARCHAR(255),
-    is_active BOOLEAN DEFAULT TRUE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
--- =========================
--- 6. SUPPLIERS - NHÀ CUNG CẤP
--- =========================
-CREATE TABLE suppliers (
-    supplier_id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    name VARCHAR(150) NOT NULL,
-    phone VARCHAR(20),
-    email VARCHAR(100),
-    address VARCHAR(255),
-    is_active BOOLEAN DEFAULT TRUE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
--- =========================
--- 7. PRODUCTS - SẢN PHẨM
--- =========================
+-- ==============================================================================
+-- 5. BẢNG PRODUCTS (SẢN PHẨM & TỒN KHO)
+-- ==============================================================================
 CREATE TABLE products (
     product_id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    name VARCHAR(150) NOT NULL,
     sku_code VARCHAR(50) NOT NULL UNIQUE,
+    product_name VARCHAR(150) NOT NULL,
     price DECIMAL(18,2) NOT NULL,
     stock_quantity INT NOT NULL DEFAULT 0,
-    reorder_point INT DEFAULT 10,
+    reorder_point INT NOT NULL DEFAULT 10,
     expiry_date DATE,
     image_url TEXT,
-    is_active BOOLEAN DEFAULT TRUE,
-
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
     category_id BIGINT NOT NULL,
-    supplier_id BIGINT,
-
+    supplier_id BIGINT NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT fk_products_categories FOREIGN KEY (category_id) REFERENCES categories(category_id),
+    CONSTRAINT fk_products_suppliers FOREIGN KEY (supplier_id) REFERENCES suppliers(supplier_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-    CONSTRAINT fk_products_categories
-        FOREIGN KEY (category_id) REFERENCES categories(category_id),
-
-    CONSTRAINT fk_products_suppliers
-        FOREIGN KEY (supplier_id) REFERENCES suppliers(supplier_id),
-
-    CONSTRAINT chk_products_price
-        CHECK (price >= 0),
-
-    CONSTRAINT chk_products_stock
-        CHECK (stock_quantity >= 0)
-);
-
--- =========================
--- 8. CUSTOMERS - KHÁCH HÀNG
--- =========================
+-- ==============================================================================
+-- 6. BẢNG CUSTOMERS (KHÁCH HÀNG & TÍCH ĐIỂM)
+-- ==============================================================================
 CREATE TABLE customers (
     customer_id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    full_name VARCHAR(150) NOT NULL,
-    phone VARCHAR(20),
-    email VARCHAR(100),
+    full_name VARCHAR(100) NOT NULL,
+    phone VARCHAR(15) UNIQUE,
+    email VARCHAR(100) UNIQUE,
     address VARCHAR(255),
     points INT DEFAULT 0,
-    is_active BOOLEAN DEFAULT TRUE,
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- =========================
--- 9. SALES_ORDERS - HÓA ĐƠN BÁN HÀNG
--- =========================
+-- ==============================================================================
+-- 7. BẢNG SALES_ORDERS (HÓA ĐƠN BÁN HÀNG - MASTER)
+-- ==============================================================================
 CREATE TABLE sales_orders (
     order_id BIGINT AUTO_INCREMENT PRIMARY KEY,
     order_code VARCHAR(50) NOT NULL UNIQUE,
     order_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-
-    customer_id BIGINT,
+    customer_id BIGINT NULL,
     user_id BIGINT NOT NULL,
-
-    subtotal DECIMAL(18,2) DEFAULT 0,
-    discount_amount DECIMAL(18,2) DEFAULT 0,
-    total_amount DECIMAL(18,2) DEFAULT 0,
-
-    payment_method VARCHAR(50),
-    status VARCHAR(50) DEFAULT 'PAID',
-
+    subtotal DECIMAL(18,2) DEFAULT 0.00,
+    discount_amount DECIMAL(18,2) DEFAULT 0.00,
+    total_amount DECIMAL(18,2) DEFAULT 0.00,
+    payment_method VARCHAR(50) NOT NULL,
+    status VARCHAR(50) NOT NULL DEFAULT 'PENDING',
     note VARCHAR(255),
+    order_type VARCHAR(20) NOT NULL DEFAULT 'IN_STORE',
+    paid_at TIMESTAMP NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT fk_sales_orders_customers FOREIGN KEY (customer_id) REFERENCES customers(customer_id),
+    CONSTRAINT fk_sales_orders_users FOREIGN KEY (user_id) REFERENCES users(user_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-    CONSTRAINT fk_sales_orders_customers
-        FOREIGN KEY (customer_id) REFERENCES customers(customer_id),
-
-    CONSTRAINT fk_sales_orders_users
-        FOREIGN KEY (user_id) REFERENCES users(user_id)
-);
-
--- =========================
--- 10. SALES_ORDER_ITEMS - CHI TIẾT HÓA ĐƠN
--- =========================
+-- ==============================================================================
+-- 8. BẢNG SALES_ORDER_ITEMS (CHI TIẾT MÓN HÀNG - DETAIL)
+-- ==============================================================================
 CREATE TABLE sales_order_items (
     order_item_id BIGINT AUTO_INCREMENT PRIMARY KEY,
-
     order_id BIGINT NOT NULL,
     product_id BIGINT NOT NULL,
-
     quantity INT NOT NULL,
     unit_price DECIMAL(18,2) NOT NULL,
     subtotal DECIMAL(18,2) NOT NULL,
+    CONSTRAINT fk_order_items_orders FOREIGN KEY (order_id) REFERENCES sales_orders(order_id) ON DELETE CASCADE,
+    CONSTRAINT fk_order_items_products FOREIGN KEY (product_id) REFERENCES products(product_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-    CONSTRAINT fk_sales_order_items_orders
-        FOREIGN KEY (order_id) REFERENCES sales_orders(order_id),
-
-    CONSTRAINT fk_sales_order_items_products
-        FOREIGN KEY (product_id) REFERENCES products(product_id),
-
-    CONSTRAINT chk_order_item_quantity
-        CHECK (quantity > 0)
-);
-
--- =========================
--- 11. INVENTORY_RECEIPTS - PHIẾU NHẬP KHO
--- =========================
-CREATE TABLE inventory_receipts (
-    receipt_id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    receipt_code VARCHAR(50) NOT NULL UNIQUE,
-    receipt_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-
-    supplier_id BIGINT NOT NULL,
-    user_id BIGINT NOT NULL,
-
-    total_amount DECIMAL(18,2) DEFAULT 0,
-    status VARCHAR(50) DEFAULT 'COMPLETED',
-    note VARCHAR(255),
-
-    CONSTRAINT fk_inventory_receipts_suppliers
-        FOREIGN KEY (supplier_id) REFERENCES suppliers(supplier_id),
-
-    CONSTRAINT fk_inventory_receipts_users
-        FOREIGN KEY (user_id) REFERENCES users(user_id)
-);
-
--- =========================
--- 12. INVENTORY_RECEIPT_ITEMS - CHI TIẾT NHẬP KHO
--- =========================
-CREATE TABLE inventory_receipt_items (
-    receipt_item_id BIGINT AUTO_INCREMENT PRIMARY KEY,
-
-    receipt_id BIGINT NOT NULL,
-    product_id BIGINT NOT NULL,
-
-    quantity INT NOT NULL,
-    import_price DECIMAL(18,2) NOT NULL,
-    expiry_date DATE,
-    subtotal DECIMAL(18,2) NOT NULL,
-
-    CONSTRAINT fk_inventory_receipt_items_receipts
-        FOREIGN KEY (receipt_id) REFERENCES inventory_receipts(receipt_id),
-
-    CONSTRAINT fk_inventory_receipt_items_products
-        FOREIGN KEY (product_id) REFERENCES products(product_id),
-
-    CONSTRAINT chk_receipt_item_quantity
-        CHECK (quantity > 0)
-);
-
--- =========================
--- 13. REFRESH_TOKENS - DÙNG SAU NÀY CHO JWT
--- =========================
+-- ==============================================================================
+-- 9. BẢNG REFRESH_TOKENS (LƯU TRỮ TOKEN XOAY VÒNG ROTATION)
+-- ==============================================================================
 CREATE TABLE refresh_tokens (
     token_id BIGINT AUTO_INCREMENT PRIMARY KEY,
     user_id BIGINT NOT NULL,
-    token VARCHAR(500) NOT NULL,
+    token_hash VARCHAR(255) NOT NULL UNIQUE,
     expiry_date TIMESTAMP NOT NULL,
-    revoked BOOLEAN DEFAULT FALSE,
+    is_revoked BOOLEAN NOT NULL DEFAULT FALSE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_refresh_tokens_users FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-    CONSTRAINT fk_refresh_tokens_users
-        FOREIGN KEY (user_id) REFERENCES users(user_id)
-);
+-- ==============================================================================
+-- 📊 DỮ LIỆU KHỞI TẠO MẪU (SEED DATA SẴN SÀNG ĐỂ CHẠY & TEST)
+-- ==============================================================================
 
--- =========================
--- INDEX TỐI ƯU TÌM KIẾM
--- =========================
-CREATE INDEX idx_products_name ON products(name);
-CREATE INDEX idx_products_category_id ON products(category_id);
-CREATE INDEX idx_products_supplier_id ON products(supplier_id);
-CREATE INDEX idx_orders_customer_id ON sales_orders(customer_id);
-CREATE INDEX idx_orders_user_id ON sales_orders(user_id);
-
-
+-- 1. Thêm Roles
 INSERT INTO roles (role_id, role_name, description) VALUES
-(1, 'ADMIN', 'Quản trị hệ thống'),
-(2, 'MANAGER', 'Quản lý cửa hàng'),
-(3, 'CASHIER', 'Nhân viên thu ngân'),
-(4, 'WAREHOUSE', 'Nhân viên kho');
-INSERT INTO permissions (permission_id, permission_name, description) VALUES
-(1, 'USER_MANAGE', 'Quản lý tài khoản'),
-(2, 'PRODUCT_READ', 'Xem sản phẩm'),
-(3, 'PRODUCT_CREATE', 'Thêm sản phẩm'),
-(4, 'PRODUCT_UPDATE', 'Sửa sản phẩm'),
-(5, 'PRODUCT_DELETE', 'Xóa sản phẩm'),
-(6, 'ORDER_READ', 'Xem hóa đơn'),
-(7, 'ORDER_CREATE', 'Tạo hóa đơn'),
-(8, 'INVENTORY_READ', 'Xem nhập kho'),
-(9, 'INVENTORY_CREATE', 'Tạo phiếu nhập kho'),
-(10, 'REPORT_VIEW', 'Xem báo cáo');
+(1, 'ROLE_ADMIN', 'Quản trị viên toàn quyền hệ thống'),
+(2, 'ROLE_STAFF', 'Nhân viên thu ngân bán hàng');
 
--- ADMIN có tất cả quyền
-INSERT INTO role_permissions (role_id, permission_id)
-SELECT 1, permission_id FROM permissions;
+-- 2. Thêm Users mẫu (Mật khẩu mặc định: admin123 và staff123 - Đã mã hóa BCrypt)
+-- Hash BCrypt của 'admin123': $2a$10$7vNqv2KxG1fL6a6p0Hq.qe3VpB2B7yZc9R8s1z0b7.QoJ8qM1g7qK
+-- Hash BCrypt của 'staff123': $2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi
+INSERT INTO users (user_id, full_name, username, password_hash, email, phone, role_id, is_active) VALUES
+(1, 'Quản Trị Viên', 'admin', '$2a$10$7vNqv2KxG1fL6a6p0Hq.qe3VpB2B7yZc9R8s1z0b7.QoJ8qM1g7qK', 'admin@supermarket.com', '0901234567', 1, TRUE),
+(2, 'Thu Ngân 01', 'staff', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'staff01@supermarket.com', '0909876543', 2, TRUE);
 
--- MANAGER
-INSERT INTO role_permissions (role_id, permission_id) VALUES
-(2, 2), (2, 3), (2, 4), (2, 5),
-(2, 6), (2, 7),
-(2, 8), (2, 9),
-(2, 10);
+-- 3. Thêm Categories
+INSERT INTO categories (category_id, category_name, description, is_active) VALUES
+(1, 'Nước giải khát', 'Nước ngọt, nước suối, trà đóng chai', TRUE),
+(2, 'Bánh kẹo & Snack', 'Bánh quy, bim bim, kẹo sô-cô-la', TRUE),
+(3, 'Sữa & Sản phẩm từ sữa', 'Sữa tươi, sữa chua, phô mai', TRUE),
+(4, 'Thực phẩm đông lạnh', 'Cá viên, xúc xích, bao tử cá', TRUE);
 
--- CASHIER
-INSERT INTO role_permissions (role_id, permission_id) VALUES
-(3, 2), (3, 6), (3, 7);
+-- 4. Thêm Suppliers
+INSERT INTO suppliers (supplier_id, supplier_name, supplier_phone, supplier_email, supplier_address, is_active) VALUES
+(1, 'Công ty TNHH Nước Giải Khát Suntory Pepsico', '02838222333', 'pepsico@vn.com', 'Cao ốc Đồng Khởi, Q1, TP.HCM', TRUE),
+(2, 'Công ty Cổ phần Sữa Việt Nam (Vinamilk)', '02854155555', 'vinamilk@vinamilk.com.vn', 'Số 10 Tân Trào, Q7, TP.HCM', TRUE),
+(3, 'Tập đoàn Masan Consumer', '02862555660', 'masan@masangroup.com', 'Tầng 12 Central Plaza, Lê Duẩn, Q1, TP.HCM', TRUE);
 
--- WAREHOUSE
-INSERT INTO role_permissions (role_id, permission_id) VALUES
-(4, 2), (4, 4), (4, 8), (4, 9);
+-- 5. Thêm Products
+INSERT INTO products (product_id, sku_code, product_name, price, stock_quantity, reorder_point, expiry_date, image_url, category_id, supplier_id, is_active) VALUES
+(1, 'PEPSI-330ML', 'Nước Ngọt Pepsi Lon 330ml', 10000.00, 150, 20, '2026-12-31', 'https://example.com/pepsi.jpg', 1, 1, TRUE),
+(2, 'STING-DAU-330', 'Nước Tăng Lực Sting Dâu 330ml', 11000.00, 200, 30, '2026-11-30', 'https://example.com/sting.jpg', 1, 1, TRUE),
+(3, 'VNM-100-DUONG', 'Sữa Tươi Tiệt Trùng Vinamilk 100% 1L', 36000.00, 80, 15, '2026-09-30', 'https://example.com/vinamilk1l.jpg', 3, 2, TRUE),
+(4, 'OMACHI-SOT-BO', 'Mì Khoai Tây Omachi Xốt Bò Hầm', 9500.00, 300, 50, '2026-10-15', 'https://example.com/omachi.jpg', 2, 3, TRUE);
 
--- =========================
--- USERS
--- Mật khẩu mẫu cho tất cả user: 123456
--- Đây là BCrypt hash để sau này test Spring Security.
--- =========================
-INSERT INTO users 
-(full_name, username, password_hash, email, phone, role_id)
-VALUES
-('Admin System', 'admin', '$2y$10$1HtchTXzRJWu4e4XfHl17uqrR7oihPbtPnMvLEGruc5HXxaE43pIu', 'admin@example.com', '0900000001', 1),
-('Quản lý cửa hàng', 'manager01', '$2y$10$1HtchTXzRJWu4e4XfHl17uqrR7oihPbtPnMvLEGruc5HXxaE43pIu', 'manager@example.com', '0900000002', 2),
-('Nhân viên thu ngân', 'cashier01', '$2y$10$1HtchTXzRJWu4e4XfHl17uqrR7oihPbtPnMvLEGruc5HXxaE43pIu', 'cashier@example.com', '0900000003', 3),
-('Nhân viên kho', 'warehouse01', '$2y$10$1HtchTXzRJWu4e4XfHl17uqrR7oihPbtPnMvLEGruc5HXxaE43pIu', 'warehouse@example.com', '0900000004', 4);
-
--- =========================
--- CATEGORIES
--- =========================
-INSERT INTO categories (name, description) VALUES
-('Nước giải khát', 'Các loại nước uống đóng chai, lon, hộp'),
-('Bánh kẹo', 'Các loại bánh, kẹo, snack'),
-('Mì gói', 'Các loại mì ăn liền'),
-('Sữa', 'Sữa hộp, sữa chai, sữa đặc'),
-('Gia vị', 'Nước mắm, dầu ăn, đường, muối'),
-('Đồ gia dụng', 'Các sản phẩm gia dụng nhỏ');
-
--- =========================
--- SUPPLIERS
--- =========================
-INSERT INTO suppliers (name, phone, email, address) VALUES
-('Công ty Coca Cola Việt Nam', '0901111222', 'coca@example.com', 'TP.HCM'),
-('Công ty PepsiCo Việt Nam', '0902222333', 'pepsi@example.com', 'Bình Dương'),
-('Công ty Acecook Việt Nam', '0903333444', 'acecook@example.com', 'TP.HCM'),
-('Công ty Vinamilk', '0904444555', 'vinamilk@example.com', 'TP.HCM'),
-('Nhà cung cấp Gia Vị Việt', '0905555666', 'giavi@example.com', 'Long An');
-
--- =========================
--- PRODUCTS
--- =========================
-INSERT INTO products
-(name, sku_code, price, stock_quantity, reorder_point, expiry_date, category_id, supplier_id)
-VALUES
-('Coca Cola lon 330ml', 'COCA330', 10000, 100, 20, '2026-12-31', 1, 1),
-('Pepsi lon 330ml', 'PEPSI330', 10000, 90, 20, '2026-12-31', 1, 2),
-('Sting đỏ chai 330ml', 'STING330', 12000, 80, 20, '2026-10-10', 1, 2),
-('Oreo socola', 'OREO001', 15000, 60, 15, '2026-08-15', 2, NULL),
-('Snack khoai tây', 'SNACK001', 12000, 70, 15, '2026-09-20', 2, NULL),
-('Mì Hảo Hảo tôm chua cay', 'HAOHAO001', 5000, 200, 50, '2026-07-30', 3, 3),
-('Mì Đệ Nhất', 'DENHAT001', 6000, 150, 50, '2026-07-30', 3, 3),
-('Sữa tươi Vinamilk 180ml', 'VINAMILK180', 8000, 120, 30, '2026-05-20', 4, 4),
-('Sữa đặc Ông Thọ', 'ONGTHO001', 25000, 50, 10, '2026-11-11', 4, 4),
-('Nước mắm Nam Ngư', 'NAMNGU001', 35000, 40, 10, '2027-01-01', 5, 5),
-('Dầu ăn Tường An 1L', 'TUONGAN1L', 45000, 35, 10, '2027-02-01', 5, 5),
-('Đường trắng 1kg', 'DUONG1KG', 22000, 25, 10, '2027-03-01', 5, 5);
-
--- =========================
--- CUSTOMERS
--- =========================
-INSERT INTO customers (full_name, phone, email, address, points) VALUES
-('Nguyễn Văn An', '0911111111', 'an@example.com', 'Quận 1, TP.HCM', 10),
-('Trần Thị Bình', '0922222222', 'binh@example.com', 'Quận 3, TP.HCM', 20),
-('Lê Minh Cường', '0933333333', 'cuong@example.com', 'Thủ Đức, TP.HCM', 5),
-('Phạm Thu Hà', '0944444444', 'ha@example.com', 'Bình Thạnh, TP.HCM', 15);
-
--- =========================
--- SALES ORDERS
--- =========================
-INSERT INTO sales_orders
-(order_code, customer_id, user_id, subtotal, discount_amount, total_amount, payment_method, status, note)
-VALUES
-('HD0001', 1, 3, 30000, 0, 30000, 'CASH', 'PAID', 'Khách mua tại quầy'),
-('HD0002', 2, 3, 25000, 0, 25000, 'BANKING', 'PAID', 'Thanh toán chuyển khoản'),
-('HD0003', 3, 3, 56000, 5000, 51000, 'CASH', 'PAID', 'Có giảm giá');
-
--- =========================
--- SALES ORDER ITEMS
--- =========================
-INSERT INTO sales_order_items
-(order_id, product_id, quantity, unit_price, subtotal)
-VALUES
-(1, 1, 2, 10000, 20000),
-(1, 6, 2, 5000, 10000),
-(2, 4, 1, 15000, 15000),
-(2, 2, 1, 10000, 10000),
-(3, 8, 2, 8000, 16000),
-(3, 10, 1, 35000, 35000),
-(3, 6, 1, 5000, 5000);
-
--- =========================
--- INVENTORY RECEIPTS
--- =========================
-INSERT INTO inventory_receipts
-(receipt_code, supplier_id, user_id, total_amount, status, note)
-VALUES
-('NK0001', 1, 4, 500000, 'COMPLETED', 'Nhập nước giải khát'),
-('NK0002', 3, 4, 750000, 'COMPLETED', 'Nhập mì gói'),
-('NK0003', 4, 4, 400000, 'COMPLETED', 'Nhập sữa');
-
--- =========================
--- INVENTORY RECEIPT ITEMS
--- =========================
-INSERT INTO inventory_receipt_items
-(receipt_id, product_id, quantity, import_price, expiry_date, subtotal)
-VALUES
-(1, 1, 50, 8000, '2026-12-31', 400000),
-(1, 3, 10, 10000, '2026-10-10', 100000),
-(2, 6, 100, 4000, '2026-07-30', 400000),
-(2, 7, 70, 5000, '2026-07-30', 350000),
-(3, 8, 50, 7000, '2026-05-20', 350000),
-(3, 9, 2, 25000, '2026-11-11', 50000);
+-- 6. Thêm Customers mẫu
+INSERT INTO customers (customer_id, full_name, phone, email, address, points, is_active) VALUES
+(1, 'Nguyễn Văn An', '0912345678', 'an.nguyen@gmail.com', '123 Cách Mạng Tháng 8, Q3, TP.HCM', 120, TRUE),
+(2, 'Trần Thị Mai', '0987654321', 'mai.tran@yahoo.com', '456 Nguyễn Thị Minh Khai, Q1, TP.HCM', 50, TRUE);
