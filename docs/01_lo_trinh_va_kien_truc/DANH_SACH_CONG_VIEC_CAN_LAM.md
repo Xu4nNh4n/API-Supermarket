@@ -657,47 +657,45 @@ Thông tin nhạy cảm không cần thiết
 
 ## 18. Docker và Nginx
 
-Mức ưu tiên: Sau khi API và test ổn định.
+Mức ưu tiên: Đã hoàn thành cấu hình cơ bản.
 
 ### Docker
 
-- [ ] Tạo Dockerfile cho Spring Boot.
-- [ ] Build file JAR.
-- [ ] Build Docker image.
-- [ ] Tạo docker-compose cho Backend và MySQL.
-- [ ] Truyền biến môi trường vào container.
-- [ ] Tạo volume cho MySQL.
+- [x] Tạo Dockerfile cho Spring Boot (Multi-stage Eclipse Temurin Java 21).
+- [x] Build file JAR và package.
+- [x] Build Docker image thành công.
+- [x] Tạo docker-compose kết nối Backend với MySQL máy host (`host.docker.internal`).
+- [x] Truyền biến môi trường an toàn qua file `.env` (`DB_PASSWORD`, `JWT_SECRET`).
+- [x] Chạy ứng dụng dưới non-root user `spring`.
 
 ### Nginx
 
-- [ ] Cấu hình reverse proxy đến Spring Boot.
-- [ ] Test request đi qua Nginx.
-- [ ] Tìm hiểu load balancing với nhiều backend instance.
+- [x] Cấu hình reverse proxy cổng 80 chuyển tiếp vào Spring Boot cổng 8080.
+- [x] Chuyển tiếp nguyên vẹn Authorization header cho JWT.
+- [x] Test request đi qua Nginx (`http://localhost/api/...`).
+- [ ] Mở rộng load balancing với 2 backend instance khi cần.
 
 ---
 
-## Thứ tự thực hiện đề xuất
+## 19. Module Sales Order (Hóa đơn bán hàng)
 
-```text
-1. Sửa update User khi email null
-2. Chuẩn hóa update isActive
-3. Bỏ createAt khỏi Request
-4. Kiểm tra khóa ngoại trước khi xóa
-5. CategoryResponse
-6. RoleResponse
-7. Validation cho LoginRequest
-8. Validate pagination và sorting
-9. Tách CreateUserRequest / UpdateUserRequest
-10. Đưa secret sang biến môi trường
-11. Unit Test
-12. Tối ưu N+1 query
-13. Refresh Token
-14. Transaction và JPA Auditing
-15. Liquibase
-16. Logging
-17. Docker
-18. Nginx
-```
+### Entity & Repository
+- [x] Entity `Customer`, `SalesOrder`, `SalesOrderItem`.
+- [x] Repository `CustomerRepository`, `SalesOrderRepository`, `SalesOrderItemRepository`.
+
+### DTO
+- [x] `OrderItemRequest`, `SalesOrderRequest`.
+- [x] `OrderItemResponse`, `SalesOrderResponse`.
+
+### Exception & Logging
+- [x] `InsufficientStockException` (Lỗi tồn kho).
+- [x] `MdcLoggingFilter` (Gắn `traceId` tự động vào MDC).
+- [x] Xử lý `InsufficientStockException` trong `GlobalExceptionHandler`.
+
+### Service & Controller
+- [ ] Interface `SalesOrderService`.
+- [ ] Triển khai `SalesOrderServiceImpl` (Trừ kho, tính tiền, `@Transactional`, ghi log chuẩn).
+- [ ] `SalesOrderController` (POST `/api/orders`, PUT pay, PUT cancel, GET filter).
 
 ---
 
@@ -706,13 +704,13 @@ Mức ưu tiên: Sau khi API và test ổn định.
 Bắt đầu tại:
 
 ```text
-src/main/java/com/api/supermarket/service/Impl/UserServiceImpl.java
+src/main/java/com/api/supermarket/service/SalesOrderService.java
+src/main/java/com/api/supermarket/service/Impl/SalesOrderServiceImpl.java
 ```
 
 Nhiệm vụ:
 
 ```text
-Sửa việc so sánh email để không phát sinh NullPointerException.
+Viết logic tạo hóa đơn, kiểm tra tồn kho, trừ số lượng sản phẩm và tính toán tổng tiền thanh toán.
 ```
 
-Sau khi hoàn thành, đánh dấu mục 1 và chuyển sang chuẩn hóa `isActive`.

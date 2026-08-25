@@ -8,12 +8,15 @@ import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
 @RestController
 @RequestMapping("/api/products")
 public class ProductController {
     private final ProductService productService;
+    private static final Logger log = LoggerFactory.getLogger(ProductController.class);
 
     public ProductController(ProductService productService) {
         this.productService = productService;
@@ -36,6 +39,7 @@ public class ProductController {
 
     @GetMapping("/{id}")
     public ProductResponse getProductById(@PathVariable Long id) {
+        log.debug("Get product request, productId = {}", id);
         return productService.getProductById(id);
     }
 
@@ -81,16 +85,19 @@ public class ProductController {
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'WAREHOUSE')") // Chỉ cho phép ADMIN và MAN
     @PostMapping
     public ProductResponse createProduct(@Valid @RequestBody ProductRequest request) {
+        log.debug("Create product request, productName = {}, productSku = {}", request.getProductName(), request.getSkuCode());
         return productService.createProduct(request);
     }
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'WAREHOUSE')") // Chỉ cho phép ADMIN và MANAGER thực hiện các thao tác này
     @PutMapping("/{id}")
     public ProductResponse updateProduct(@PathVariable Long id, @Valid @RequestBody ProductRequest request) {
+        log.debug("Update product request, productId = {}, productName = {}", id, request.getProductName());
         return productService.updateProduct(id, request);
     }
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'WAREHOUSE')") // Chỉ cho phép ADMIN và MANAGER thực hiện các thao tác này
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteProduct(@PathVariable Long id) {
+        log.debug("Delete product request, productId = {}", id);
         productService.deleteProduct(id);
         return ResponseEntity.noContent().build();
     }

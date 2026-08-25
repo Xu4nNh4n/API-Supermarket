@@ -53,8 +53,11 @@ public class SecurityConfig {
                                 "/v3/api-docs/**",
                                 "/api/auth/login",
                                 "/api/auth/refresh",
-                                "/api/auth/logout"
-                        ).permitAll()
+                                "/api/auth/logout",
+                                "/api/test/logging",
+                                "/api/test/logging/exception-message",
+                                "/api/test/logging/exception-stacktrace"
+                            ).permitAll()
                         // note: Tat ca API con lai deu can request da duoc xac thuc boi JWT filter.
                         .anyRequest().authenticated())
                 // note: Chay JwtAuthenticationFilter truoc filter login mac dinh cua Spring Security.

@@ -1,0 +1,21 @@
+databaseChangeLog:
+    # - include:
+    #     file: db/changelog/changes/001-create-roles-table.yaml
+
+    # - include:
+    #     file: db/changelog/changes/002-create-categories-table.yaml
+
+    # - include:
+    #     file: db/changelog/changes/003-create-suppliers-table.yaml
+
+    # - include:
+    #     file: db/changelog/changes/004-create-users-table.yaml
+
+    # - include:
+    #     file: db/changelog/changes/005-create-products-table.yaml
+
+    # - include:
+    #     file: db/changelog/changes/006-create-refresh-tokens-table.yaml
+
+    - include:
+        file: db/changelog/changes/007-update-sales_orders-table.yaml
